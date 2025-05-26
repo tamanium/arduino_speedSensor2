@@ -2,65 +2,41 @@
 
 class AttinyPin {
 	private:
-		byte num;       // ピン番号」
-		byte mode;      // モード
-		bool digitalValue; // デジタル入力値
-		int analogValue;   // アナログ入力値
+		int num;       // ピン番号
+		int mode;      // モード
 	public:
 		// コンストラクタ
-		AttinyPin(int p, int mode = OUTPUT);
-		void updateValue();
-		byte getNum();
-		bool getDigitalValue();
-		byte getDigitalValue1();
-		int getAnalogValue();
+		AttinyPin(int p);
+		void begin(int mode);
+		int getNum(); 
 };
 
 /**
  * コンストラクタ
  */
-AttinyPin::AttinyPin(int p, int mode){
-	this->num = byte(p);
-	this->mode = byte(mode);
-	this->digitalValue = false;
-	this->analogValue = 0;
-	if(mode <= 2) {
-		pinMode(p, mode);
-	}
+AttinyPin::AttinyPin(int p){
+	this->num = p;
+	this->mode = OUTPUT;
 }
-byte AttinyPin::getNum(){
+
+/**
+ * ピン番号取得
+ */
+int AttinyPin::getNum(){
 	return this->num;
 }
 
 /**
- * 値の更新
+ * 動作開始
+ *
+ * @param mode OUTPUT(0x00), INPUT(0x01), INPUT_PULLUP(0x02) (0x03はアナログ入力)
  */
- void AttinyPin::updateValue(){
-	if(mode == INPUT|| mode == INPUT_PULLUP){
-		this->digitalValue = (digitalRead(this->num) == HIGH);
+void AttinyPin::begin(int mode){
+	if(3 < mode){
+		mode = OUTPUT;
 	}
-	else if(mode != OUTPUT){
-		this->analogValue = analogRead(this->num);
+	if(mode==OUTPUT || mode==INPUT || mode==INPUT_PULLUP){
+		pinMode(this->num,mode);
 	}
- }
-
-/**
- * デジタル入力値取得
- */
- bool AttinyPin::getDigitalValue(){
-	return this->digitalValue;
- }
-
- /**
- * デジタル入力値取得
- */
- byte AttinyPin::getDigitalValue1(){
-	return this->digitalValue ? 1 : 0;
- }
-
-/**
- * アナログ入力値取得
- */
- int AttinyPin::getAnalogValue(){
-	return this->analogValue;
- }
+	this->mode = mode;
+}
