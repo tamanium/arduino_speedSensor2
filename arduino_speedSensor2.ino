@@ -1,21 +1,21 @@
 /*
-                 ┏━━━━━━━━━┓
-             VCC ┃1      14┃ GND
-  SS  A0 PIN_PA4 ┃2      13┃ PIN_PA3 A10 SCK
-      A1 PIN_PA5 ┃3      12┃ PIN_PA2 A9 MISO
-      A2 PIN_PA6 ┃4      11┃ PIN_PA1 A8 MOSI
-      A3 PIN_PA7 ┃5      10┃ PIN_PA0 A11 UPDI
-  RxD D4 PIN_PB3 ┃6       9┃ PIN_PB0 A7 SCL
-  TxD D5 PIN_PB2 ┃7       8┃ PIN_PB1 A6 SDA
-                 ┗━━━━━━━━━┛
+                  ┏━━━━━━━━━┓
+              VCC ┃1      14┃ GND
+［SHIFTS］ PIN_PA4 ┃2      13┃ PIN_PA3 [WINKER_L]
+ ［SPEED］ PIN_PA5 ┃3      12┃ PIN_PA2 [WINKER_R]
+［SWITCH］ PIN_PA6 ┃4      11┃ PIN_PA1 [PULSE_OUT]
+   [---]  PIN_PA7 ┃5      10┃ PIN_PA0 [UPDI]
+   [---]  PIN_PB3 ┃6       9┃ PIN_PB0 [SCL]
+   [---]  PIN_PB2 ┃7       8┃ PIN_PB1 [SDA]
+                  ┗━━━━━━━━━┛
 
 備考：
   128x32のOLEDは動作不安定なので128x64のOLEDを使用
-  USB-CのD-とSCLを接続することによるプルアップは不要
 */
 
 //#define DEBUG_MODE
 #define FREQ_MODE
+
 #define INPUT_ANALOG 0x03
 
 #define FREQ_INPUT  0
@@ -37,7 +37,8 @@
 
 #ifdef FREQ_MODE
 	const int FREQ_INTERVAL = 2000;
-	const int pulseOutputPin = PIN_PA1;	
+	AttinyPin PULSE_OUT(PIN_PA1);
+	//const int pulseOutputPin = PIN_PA1;	
 	int freqArr[] = {
 		10,50,
 		100,150,
@@ -71,7 +72,6 @@ AttinyPin SWITCH(PIN_PA6);
 AttinyPin WINKER_L(PIN_PA3);
 AttinyPin WINKER_R(PIN_PA2);
 
-
 void setup() {
 	delay(500);
 	
@@ -88,7 +88,7 @@ void setup() {
 
 	#ifdef FREQ_MODE
 		//デバッグ用
-		tone(pulseOutputPin, freqArr[freqArrIndex]);
+		tone(PULSE_OUT.getNum(), freqArr[freqArrIndex]);
 	#endif
 	
 	#ifdef DEBUG_MODE
@@ -140,7 +140,7 @@ void loop(){
 		unsigned long pulseCount = counter;
 		pulseSpans = 0;
 		interrupts();
-		int freqInt = int((pulseCount - beforePulseCount) * 1000000 / (2 *spansTotal));
+		int freqInt = int((pulseCount - beforePulseCount) * 1000000 / (2 * spansTotal));
 		if(freqInt < 0){
 			freqInt = 0;
 		}
@@ -155,7 +155,7 @@ void loop(){
 		if(freqTime <= time){
 			freqArrIndex++;
 			freqArrIndex %= freqArrSize;
-			tone(pulseOutputPin, freqArr[freqArrIndex]);
+			tone(PULSE_OUT.getNum(), freqArr[freqArrIndex]);
 			data[FREQ_OUTPUT] = freqArr[freqArrIndex];
 			freqTime += FREQ_INTERVAL;
 		}
