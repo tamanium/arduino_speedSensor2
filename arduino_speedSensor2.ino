@@ -71,30 +71,36 @@ AttinyPin WINKER_R(PIN_PA2);
 void setup() {
 	delay(200);
 	
-	//ディスプレイと接続されている場合、デバッグモードに
-	Wire.begin();
-	Wire.beginTransmission(ADDRESS_OLED>>1);
-	if(Wire.endTransmission() == 0){
-		debugMode = true;
+	if(debugMode){
+		//ディスプレイと接続されている場合、デバッグモードに
+		Wire.begin();
+		Wire.beginTransmission(ADDRESS_OLED>>1);
+		if(Wire.endTransmission() == 0){
+			debugMode = true;
 
-		oled.init(); 
-		oled.display();
-		oled.clear();
-		oled.setPage(0);
-		oled.printlnS("Hello");
-		oled.setPage(2);
-		oled.printlnS("debug mode");
-		delay(1000);
-		oled.clear();
+			oled.init(); 
+			oled.display();
+			oled.clear();
+			oled.setPage(0);
+			oled.printlnS("Hello");
+			oled.setPage(2);
+			oled.printlnS("debug mode");
+			delay(1000);
+			oled.clear();
+		}
+		else{
+			// ディスプレイと非接続の場合、スレーブモードへ
+			Wire.end();
+		}
 	}
-	else{
-		// ディスプレイと非接続の場合、スレーブモードへ
-		Wire.end();
+
+	if(!debugMode){
 		// I2Cスレーブ設定
 		Wire.begin(ADDRESS_ME);
 		Wire.onReceive(receiveEvent);
 		Wire.onRequest(requestEvent);
 	}
+	
 
 	// ピン設定
 	GEARS.begin(INPUT_ANALOG);    // ギア
