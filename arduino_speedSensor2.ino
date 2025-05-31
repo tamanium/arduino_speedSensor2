@@ -3,8 +3,8 @@
                VCC ┃1.  ┗┛  14┃ GND
    [GEARS] PIN_PA4 ┃2       13┃ PIN_PA3 [WINKER_L]
     [FREQ] PIN_PA5 ┃3       12┃ PIN_PA2 [WINKER_R]
-  [SWITCH] PIN_PA6 ┃4       11┃ PIN_PA1 [PULSE]
- [VOLTAGE] PIN_PA7 ┃5       10┃ PIN_PA0 [UPDI]
+   [PULSE] PIN_PA6 ┃4       11┃ PIN_PA1 [VOLTAGE]
+  [SWITCH] PIN_PA7 ┃5       10┃ PIN_PA0 [UPDI]
      [---] PIN_PB3 ┃6        9┃ PIN_PB0 [SCL]
      [---] PIN_PB2 ┃7        8┃ PIN_PB1 [SDA]
                    ┗━━━━━━━━━━┛
@@ -29,17 +29,18 @@
 #include "AttinyPin.h" // 自作クラスヘッダ
 
 #ifdef DEBUG_MODE
-	#define ADDRESS_ME 0x55
-#else
 	#include "tiny1306.h"
 	#define ADDRESS_OLED 0x78
 	TINY1306 oled = TINY1306(ADDRESS_OLED>>1, 128, 8);
-	const int DISPLAY_INTERVAL = 100;
+	const int DISPLAY_INTERVAL = 16;
+#else
+	#define ADDRESS_ME 0x55
 #endif
 
 #ifdef FREQ_MODE
 	const int INDEX_FREQTERVAL = 2000;
-	AttinyPin PULSE(PIN_PA1);
+	//AttinyPin PULSE(PIN_PA1);
+	AttinyPin PULSE(PIN_PA6);
 	int freqArr[] = {
 		15,55,
 		105,155,
@@ -67,8 +68,10 @@ int dataSize = sizeof(data) / sizeof(int);
 
 AttinyPin GEARS(PIN_PA4);
 AttinyPin FREQ(PIN_PA5);
-AttinyPin SWITCH(PIN_PA6);
-AttinyPin VOLTAGE(PIN_PA7);
+//AttinyPin SWITCH(PIN_PA6);
+AttinyPin SWITCH(PIN_PA7);
+//AttinyPin VOLTAGE(PIN_PA7);
+AttinyPin VOLTAGE(PIN_PA1);
 AttinyPin WINKER_L(PIN_PA3);
 AttinyPin WINKER_R(PIN_PA2);
 
@@ -78,6 +81,7 @@ void setup() {
 	#ifdef DEBUG_MODE
 		//デバッグモードの場合、ディスプレイと接続
 		Wire.begin();
+		Wire.setClock(400000);
 		oled.init(); 
 		oled.display();
 		oled.clear();
@@ -167,20 +171,19 @@ void loop(){
 		// ディスプレイ表示
 		static unsigned long dispTime = 0;
 		if(dispTime <= time){
-			oled.setPage(0);
-			oled.printlnS(String(loopNum++));
+			unsigned long dStart = millis();
+			/*
 			String vStr = "count  :";
 			vStr += String(counter);
 			oled.setPage(2);
-			oled.printlnS(vStr);
-
-			vStr  = "freqIO :";
+			oled.printlnS(vStr);/
+			*/
+			String vStr  = "freqIO :";
 			vStr += convertStr(data[INDEX_FREQ]);
 			vStr += "-";
 			vStr += convertStr(data[INDEX_PULSE]);
 			oled.setPage(3);
 			oled.printlnS(vStr);
-
 			vStr  = "voltADC:";
 			vStr += convertStr(data[INDEX_VOLT]);
 			oled.setPage(4);
@@ -194,33 +197,27 @@ void loop(){
 			vStr  = "switch :";
 			int v = data[INDEX_SWITCH];
 			vStr += convertStr(v);
-			vStr += "-";
-			if(v == 1){
-				vStr += "OFF";
-			}
-			else{
-				vStr += "ON ";
-			}
+			vStr += ":";
+			vStr += (v == 1) ? "OFF" : "ON ";
 			oled.setPage(6);
 			oled.printlnS(vStr);
 
 			vStr  = "winkers:";
 			v = data[INDEX_WINKERS];
 			vStr += convertStr(v);
+			vStr += ":";
+			vStr += ((v&0x01) == 0x01) ? "L" : " ";
 			vStr += "-";
-			if(v == 0x01){
-				vStr += "L- ";
-			}
-			else if(v == 0x02){
-				vStr += " -R";
-			}
-			else if(v == 0x03){
-				vStr += "L-R";
-			}
-			else{
-				vStr += " - ";
-			}
+			vStr += ((v&0x02) == 0x02) ? "R" : " ";
 			oled.setPage(7);
+			oled.printlnS(vStr);
+
+			unsigned long dDuration = millis() - dStart;
+
+			vStr = convertStr(loopNum++);
+			vStr += " ";
+			vStr += convertStr(dDuration);
+			oled.setPage(0);
 			oled.printlnS(vStr);
 
 			dispTime += DISPLAY_INTERVAL;
