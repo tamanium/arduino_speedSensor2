@@ -14,7 +14,7 @@
 */
 
 #define FREQ_MODE
-#define DEBUG_MODE
+//#define DEBUG_MODE
 
 #define INPUT_ANALOG 0x03
 
