@@ -64,7 +64,7 @@ unsigned long counter = 0;
 unsigned long pulseSpans = 0;
 
 int data[6] = {-1,-1,-1,-1,-1,-1};
-int dataSize = sizeof(data) / sizeof(int);
+int dataSize = 10;
 
 AttinyPin GEARS(PIN_PA4);
 AttinyPin FREQ(PIN_PA5);
@@ -116,7 +116,7 @@ void setup() {
 }
 
 void loop(){
-	static int loopNum = 0;
+	
 	static unsigned long updateTime = 0;
 	static unsigned long beforePulseCount = 0;
 
@@ -170,14 +170,9 @@ void loop(){
 	#ifdef DEBUG_MODE
 		// ディスプレイ表示
 		static unsigned long dispTime = 0;
+		static int loopNum = 0;
 		if(dispTime <= time){
 			unsigned long dStart = millis();
-			/*
-			String vStr = "count  :";
-			vStr += String(counter);
-			oled.setPage(2);
-			oled.printlnS(vStr);/
-			*/
 			String vStr  = "freqIO :";
 			vStr += convertStr(data[INDEX_FREQ]);
 			vStr += "-";
