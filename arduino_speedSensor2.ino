@@ -63,8 +63,8 @@ byte regIndex = 0x00;
 unsigned long counter = 0;
 unsigned long pulseSpans = 0;
 
-int data[6] = {-1,-1,-1,-1,-1,-1};
-int dataSize = 10;
+int data[6] = {-7,-2,-3,-4,-5,-6};
+int dataSize = sizeof(data) / sizeof(int);
 
 AttinyPin GEARS(PIN_PA4);
 AttinyPin FREQ(PIN_PA5);
@@ -266,7 +266,7 @@ void interruption(){
   * I2C要求処理
   */
 	void requestEvent(){
-		int sendData = -1;
+		int sendData = -8;
 		if(regIndex < dataSize){
 			sendData = data[regIndex];
 		}
