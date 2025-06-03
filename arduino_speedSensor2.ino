@@ -130,8 +130,8 @@ void loop(){
 	// 電圧ADC値取得
 	data[INDEX_VOLT] = analogRead(VOLTAGE.getNum());
 	// ウインカー左右取得
-	data[INDEX_WINKERS] = digitalRead(WINKER_L.getNum())<<1;
-	data[INDEX_WINKERS] |= digitalRead(WINKER_R.getNum());
+	data[INDEX_WINKERS] = (!digitalRead(WINKER_L.getNum()))<<1;
+	data[INDEX_WINKERS] |= !digitalRead(WINKER_R.getNum());
 
 	// 周波数取得
 	if(updateTime <= time){
