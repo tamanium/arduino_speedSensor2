@@ -52,14 +52,16 @@
 	const int FREQ_INTERVAL =  250;
 #endif 
 
+// 本体側も同じ定義
 enum {
 	INDEX_FREQ,
-	INDEX_PULSE,
-	INDEX_VOLT,
 	INDEX_GEARS,
 	INDEX_WINKERS,
 	INDEX_SWITCH,
+	INDEX_VOLT,
+	INDEX_PULSE,
 	DATA_SIZE,
+	INDEX_A_PART = 0x40,
 	INDEX_ALL = 0xFF,
 };
 
@@ -67,8 +69,7 @@ byte regIndex = 0x00;
 unsigned long counter = 0;
 unsigned long pulseSpans = 0;
 
-int data[6] = {-2,-2,-2,-2,-2,-2};
-int dataSize = sizeof(data) / sizeof(int);
+int data[DATA_SIZE];
 
 AttinyPin GEARS(PIN_PA4);
 AttinyPin FREQ(PIN_PA5);
@@ -99,7 +100,12 @@ void setup() {
 		Wire.onReceive(receiveEvent);
 		Wire.onRequest(requestEvent);
 	#endif
-
+	
+	// データバッファの初期化
+	for(int i=0;i<DATA_SIZE;i++){
+		data[i] = -2;
+	}
+	
 	// ピン設定
 	GEARS.begin(INPUT_ANALOG);    // ギア
 	FREQ.begin(INPUT_PULLUP);     // 周波数
@@ -269,7 +275,17 @@ void interruption(){
 	 */
 	void requestEvent(){
 		int sendData = -8;
-		if(regIndex < DATA_SIZE){
+		if(regIndex == INDEX_A_PART){
+			byte sendDataArr[8] = {
+				byte(data[INDEX_FREQ]   >>8), byte(data[INDEX_FREQ]   &0xFF),
+				byte(data[INDEX_GEARS]  >>8), byte(data[INDEX_GEARS]  &0xFF),
+				byte(data[INDEX_WINKERS]>>8), byte(data[INDEX_WINKERS]&0xFF),
+				byte(data[INDEX_SWITCH] >>8), byte(data[INDEX_SWITCH] &0xFF),
+			};
+			Wire.write(sendDataArr, 8);
+			return;
+		}
+		else if(regIndex < DATA_SIZE){
 			sendData = data[regIndex];
 		}
 		byte sendDataArr[2] = {byte(sendData>>8), byte(sendData&0xFF)};
