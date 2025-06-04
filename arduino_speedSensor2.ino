@@ -32,7 +32,6 @@
 
 #ifdef FREQ_MODE
 	const int INDEX_FREQTERVAL = 2000;
-	//AttinyPin PULSE(PIN_PA1);
 	AttinyPin PULSE(PIN_PA6);
 	int freqArr[] = {
 		15,55,
@@ -47,9 +46,9 @@
 		905,955,
 		1005
 	};
-	int freqArrSize = sizeof(freqArr) / sizeof(int);
+	const int freqArrSize = sizeof(freqArr) / sizeof(int);
+	const int FREQ_INTERVAL = 250;
 	int freqArrIndex = 0;
-	const int FREQ_INTERVAL =  250;
 #endif 
 
 // 本体側も同じ定義
@@ -65,18 +64,17 @@ enum {
 	INDEX_ALL = 0xFF,
 };
 
-byte regIndex = 0x00;
-unsigned long counter = 0;
-unsigned long pulseSpans = 0;
-
-int data[DATA_SIZE];
-
 AttinyPin GEARS(PIN_PA4);
 AttinyPin FREQ(PIN_PA5);
 AttinyPin SWITCH(PIN_PA7);
 AttinyPin VOLTAGE(PIN_PA1);
 AttinyPin WINKER_L(PIN_PA3);
 AttinyPin WINKER_R(PIN_PA2);
+
+byte regIndex = 0x00;
+unsigned long counter = 0;
+unsigned long pulseSpans = 0;
+int data[DATA_SIZE];
 
 void setup() {
 	delay(200);
@@ -138,7 +136,8 @@ void loop(){
 	// 電圧ADC値取得(更新遅くてもOK)
 	data[INDEX_VOLT] = analogRead(VOLTAGE.getNum());
 	// ウインカー左右取得
-	data[INDEX_WINKERS] = (!digitalRead(WINKER_L.getNum()))<<1;
+	data[INDEX_WINKERS] = digitalRead(SWITCH.getNum()) << 2;
+	data[INDEX_WINKERS] |= !digitalRead(WINKER_L.getNum()) << 1;
 	data[INDEX_WINKERS] |= !digitalRead(WINKER_R.getNum());
 
 	// 周波数取得
