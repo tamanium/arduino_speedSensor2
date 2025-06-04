@@ -18,13 +18,6 @@
 
 #define INPUT_ANALOG 0x03
 
-#define INDEX_FREQ    0
-#define INDEX_PULSE   1
-#define INDEX_VOLT    2
-#define INDEX_GEARS   3
-#define INDEX_WINKERS 4
-#define INDEX_SWITCH  5
-
 #include <Wire.h>      // I2C通信
 #include "AttinyPin.h" // 自作クラスヘッダ
 
@@ -59,18 +52,27 @@
 	const int FREQ_INTERVAL =  250;
 #endif 
 
+enum {
+	INDEX_FREQ,
+	INDEX_PULSE,
+	INDEX_VOLT,
+	INDEX_GEARS,
+	INDEX_WINKERS,
+	INDEX_SWITCH,
+	DATA_SIZE,
+	INDEX_ALL = 0xFF,
+};
+
 byte regIndex = 0x00;
 unsigned long counter = 0;
 unsigned long pulseSpans = 0;
 
-int data[6] = {-7,-2,-3,-4,-5,-6};
+int data[6] = {-2,-2,-2,-2,-2,-2};
 int dataSize = sizeof(data) / sizeof(int);
 
 AttinyPin GEARS(PIN_PA4);
 AttinyPin FREQ(PIN_PA5);
-//AttinyPin SWITCH(PIN_PA6);
 AttinyPin SWITCH(PIN_PA7);
-//AttinyPin VOLTAGE(PIN_PA7);
 AttinyPin VOLTAGE(PIN_PA1);
 AttinyPin WINKER_L(PIN_PA3);
 AttinyPin WINKER_R(PIN_PA2);
@@ -127,7 +129,7 @@ void loop(){
 	data[INDEX_GEARS]= analogRead(GEARS.getNum());
 	// スイッチ状態取得
 	data[INDEX_SWITCH] = digitalRead(SWITCH.getNum());
-	// 電圧ADC値取得
+	// 電圧ADC値取得(更新遅くてもOK)
 	data[INDEX_VOLT] = analogRead(VOLTAGE.getNum());
 	// ウインカー左右取得
 	data[INDEX_WINKERS] = (!digitalRead(WINKER_L.getNum()))<<1;
@@ -253,9 +255,9 @@ void interruption(){
 		return vStr;
 	}
 #else
- /**
-  * I2C受診処理
-  */
+	/**
+	 * I2C受診処理
+	 */
 	void receiveEvent(int numByte){
 		while(0 < Wire.available()){
 			regIndex = Wire.read();
@@ -263,11 +265,11 @@ void interruption(){
 	}
 
 	/**
-  * I2C要求処理
-  */
+	 * I2C要求処理
+	 */
 	void requestEvent(){
 		int sendData = -8;
-		if(regIndex < dataSize){
+		if(regIndex < DATA_SIZE){
 			sendData = data[regIndex];
 		}
 		byte sendDataArr[2] = {byte(sendData>>8), byte(sendData&0xFF)};
