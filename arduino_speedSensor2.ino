@@ -53,23 +53,23 @@
 
 // 本体側も同じ定義
 enum {
-	INDEX_FREQ,
-	INDEX_GEARS,
-	INDEX_WINKERS,
-	INDEX_SWITCH,
-	INDEX_VOLT,
-	INDEX_PULSE,
-	DATA_SIZE,
-	INDEX_A_PART = 0x40,
-	INDEX_ALL = 0xFF,
+	INDEX_FREQ,           // パルス周波数
+	INDEX_GEARS,         // ギアポジADC値
+	INDEX_WINKERS,       // ウインカービット値
+	INDEX_SWITCH,        // スイッチビット値
+	INDEX_VOLT,          // 電圧ADC値
+	INDEX_PULSE,         // デバッグ用出力パルス周波数
+	DATA_SIZE,           // 配列要素数
+	INDEX_A_PART = 0x40, // 電圧と出力パルス以外のデータを要求する値
+	INDEX_ALL = 0xFF,    // 全てのデータを要求する値(イラナイかも)
 };
 
-AttinyPin GEARS(PIN_PA4);
-AttinyPin FREQ(PIN_PA5);
-AttinyPin SWITCH(PIN_PA7);
-AttinyPin VOLTAGE(PIN_PA1);
-AttinyPin WINKER_L(PIN_PA3);
-AttinyPin WINKER_R(PIN_PA2);
+AttinyPin GEARS(PIN_PA4);    // ギア
+AttinyPin FREQ(PIN_PA5);     // 周波数
+AttinyPin SWITCH(PIN_PA7);   // スイッチ
+AttinyPin VOLTAGE(PIN_PA1);  // 電圧
+AttinyPin WINKER_L(PIN_PA3); // ウインカー左
+AttinyPin WINKER_R(PIN_PA2); // ウインカー右
 
 byte regIndex = 0x00;
 unsigned long counter = 0;
@@ -105,26 +105,25 @@ void setup() {
 	}
 
 	// ピン設定
-	GEARS.begin(INPUT_ANALOG);     // ギア
-	FREQ.begin(INPUT_PULLUP);      // 周波数
-	SWITCH.begin(INPUT_PULLUP);    // スイッチ
-	VOLTAGE.begin(INPUT_ANALOG);   // 電圧
-	WINKER_L.begin(INPUT_PULLUP);  // ウインカー左
-	WINKER_R.begin(INPUT_PULLUP);  // ウインカー右
+	GEARS.begin(INPUT_ANALOG);    // ギア
+	FREQ.begin(INPUT_PULLUP);     // 周波数
+	SWITCH.begin(INPUT_PULLUP);   // スイッチ
+	VOLTAGE.begin(INPUT_ANALOG);  // 電圧
+	WINKER_L.begin(INPUT_PULLUP); // ウインカー左
+	WINKER_R.begin(INPUT_PULLUP); // ウインカー右
 
 	// 割り込み設定
 	attachInterrupt(digitalPinToInterrupt(FREQ.getNum()), interruption, CHANGE);
 
-#ifdef FREQ_MODE
-	// デバッグ用パルス出力設定
-	tone(PULSE.getNum(), freqArr[freqArrIndex]);
-#endif
+	#ifdef FREQ_MODE
+		// デバッグ用パルス出力設定
+		tone(PULSE.getNum(), freqArr[freqArrIndex]);
+	#endif
 }
 
 void loop() {
 
 	static unsigned long updateTime = 0;
-	static unsigned long beforePulseCount = 0;
 
 	// システム時刻取得
 	unsigned long time = millis();
@@ -144,81 +143,81 @@ void loop() {
 	if (updateTime <= time) {
 		noInterrupts();
 		// 累計周期(us)
-		long _pulsePeriodTotal = pulsePeriodTotal;
+		long p = pulsePeriodTotal;
 		// 周期リセット
 		pulsePeriodTotal = 0;
 		// 前回取得からのパルスカウント
-		unsigned long _counter = counter;
+		unsigned long c = counter;
 		interrupts();
 		// 周波数算出
-		data[INDEX_FREQ] = calcFreq(_counter, _pulsePeriodTotal);
+		data[INDEX_FREQ] = calcFreq(c, p);
 
 		updateTime += FREQ_INTERVAL;
 	}
 
-#ifdef FREQ_MODE
-	// パルス出力設定
-	static unsigned long freqTime = 0;
-	if (freqTime <= time) {
-		freqArrIndex++;
-		freqArrIndex %= freqArrSize;
-		tone(PULSE.getNum(), freqArr[freqArrIndex]);
-		data[INDEX_PULSE] = freqArr[freqArrIndex];
-		freqTime += INDEX_FREQTERVAL;
-	}
-#endif
+	#ifdef FREQ_MODE
+		// パルス出力設定
+		static unsigned long freqTime = 0;
+		if (freqTime <= time) {
+			freqArrIndex++;
+			freqArrIndex %= freqArrSize;
+			tone(PULSE.getNum(), freqArr[freqArrIndex]);
+			data[INDEX_PULSE] = freqArr[freqArrIndex];
+			freqTime += INDEX_FREQTERVAL;
+		}
+	#endif
 
-#ifdef DEBUG_MODE
-	// ディスプレイ表示
-	static unsigned long dispTime = 0;
-	static int loopNum = 0;
-	if (dispTime <= time) {
-		unsigned long dStart = millis();
-		String vStr = "freqIO :";
-		vStr += convertStr(data[INDEX_FREQ]);
-		vStr += "-";
-		vStr += convertStr(data[INDEX_PULSE]);
-		oled.setPage(3);
-		oled.printlnS(vStr);
-		vStr = "voltADC:";
-		vStr += convertStr(data[INDEX_VOLT]);
-		oled.setPage(4);
-		oled.printlnS(vStr);
+	#ifdef DEBUG_MODE
+		// ディスプレイ表示
+		static unsigned long dispTime = 0;
+		static int loopNum = 0;
+		if (dispTime <= time) {
+			unsigned long dStart = millis();
+			String vStr = "freqIO :";
+			vStr += convertStr(data[INDEX_FREQ]);
+			vStr += "-";
+			vStr += convertStr(data[INDEX_PULSE]);
+			oled.setPage(3);
+			oled.printlnS(vStr);
+			vStr = "voltADC:";
+			vStr += convertStr(data[INDEX_VOLT]);
+			oled.setPage(4);
+			oled.printlnS(vStr);
 
-		vStr = "gearADC:";
-		vStr += convertStr(data[INDEX_GEARS]);
-		oled.setPage(5);
-		oled.printlnS(vStr);
+			vStr = "gearADC:";
+			vStr += convertStr(data[INDEX_GEARS]);
+			oled.setPage(5);
+			oled.printlnS(vStr);
 
-		vStr = "switch :";
-		int v = data[INDEX_SWITCH];
-		vStr += convertStr(v);
-		vStr += ":";
-		vStr += (v == 1) ? "OFF" : "ON ";
-		oled.setPage(6);
-		oled.printlnS(vStr);
+			vStr = "switch :";
+			int v = data[INDEX_SWITCH];
+			vStr += convertStr(v);
+			vStr += ":";
+			vStr += (v == 1) ? "OFF" : "ON ";
+			oled.setPage(6);
+			oled.printlnS(vStr);
 
-		vStr = "winkers:";
-		v = data[INDEX_WINKERS];
-		vStr += convertStr(v);
-		vStr += ":";
-		vStr += ((v & 0x01) == 0x01) ? "L" : " ";
-		vStr += "-";
-		vStr += ((v & 0x02) == 0x02) ? "R" : " ";
-		oled.setPage(7);
-		oled.printlnS(vStr);
+			vStr = "winkers:";
+			v = data[INDEX_WINKERS];
+			vStr += convertStr(v);
+			vStr += ":";
+			vStr += ((v & 0x01) == 0x01) ? "L" : " ";
+			vStr += "-";
+			vStr += ((v & 0x02) == 0x02) ? "R" : " ";
+			oled.setPage(7);
+			oled.printlnS(vStr);
 
-		unsigned long dDuration = millis() - dStart;
+			unsigned long dDuration = millis() - dStart;
 
-		vStr = convertStr(loopNum++);
-		vStr += " ";
-		vStr += convertStr(dDuration);
-		oled.setPage(0);
-		oled.printlnS(vStr);
+			vStr = convertStr(loopNum++);
+			vStr += " ";
+			vStr += convertStr(dDuration);
+			oled.setPage(0);
+			oled.printlnS(vStr);
 
-		dispTime += DISPLAY_INTERVAL;
-	}
-#endif
+			dispTime += DISPLAY_INTERVAL;
+		}
+	#endif
 }
 
 /**
@@ -262,10 +261,13 @@ void interruption() {
 	String convertStr(int v) {
 		String vStr = "";
 		if (0 <= v && v < 10) {
+			// 0以上10未満の場合
 			vStr += "   ";
 		} else if ((10 <= v && v < 100) || (-10 < v && v < 0)) {
+			// 10以上100未満の場合 または -10超0未満の場合
 			vStr += "  ";
 		} else if ((100 <= v && v < 1000) || (-100 < v && v <= -10)) {
+			// 100以上1000未満の場合 または -100超-10以下の場合
 			vStr += " ";
 		}
 		vStr += String(v);
@@ -288,14 +290,10 @@ void interruption() {
 		int sendData = -8;
 		if (regIndex == INDEX_A_PART) {
 			byte sendDataArr[8] = {
-				byte(data[INDEX_FREQ] >> 8),
-				byte(data[INDEX_FREQ] & 0xFF),
-				byte(data[INDEX_GEARS] >> 8),
-				byte(data[INDEX_GEARS] & 0xFF),
-				byte(data[INDEX_WINKERS] >> 8),
-				byte(data[INDEX_WINKERS] & 0xFF),
-				byte(data[INDEX_SWITCH] >> 8),
-				byte(data[INDEX_SWITCH] & 0xFF),
+				byte(data[INDEX_FREQ] >> 8),    byte(data[INDEX_FREQ] & 0xFF),
+				byte(data[INDEX_GEARS] >> 8),   byte(data[INDEX_GEARS] & 0xFF),
+				byte(data[INDEX_WINKERS] >> 8), byte(data[INDEX_WINKERS] & 0xFF),
+				byte(data[INDEX_SWITCH] >> 8),  byte(data[INDEX_SWITCH] & 0xFF),
 			};
 			Wire.write(sendDataArr, 8);
 			return;
