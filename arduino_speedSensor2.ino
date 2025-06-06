@@ -229,7 +229,7 @@ void loop() {
 int calcFreq(int counter, long period) {
 	static int beforeCounter = 0;
 
-	int freqInt = int((counter - beforeCounter) * 1000000 / (2 * period));
+	int freqInt = int((counter - beforeCounter) * 1000000 / (1 * period));
 	if (freqInt < 0) {
 		freqInt = 0;
 	} else {
