@@ -130,12 +130,12 @@ void loop() {
 
 	// ギアポジションADC値取得
 	data[INDEX_GEARS] = analogRead(GEARS.getNum());
-	// スイッチ状態取得
-	data[INDEX_SWITCH] = digitalRead(SWITCH.getNum());
+	// スイッチ状態取得(LOWでON)
+	data[INDEX_SWITCH] = !digitalRead(SWITCH.getNum());
 	// 電圧ADC値取得(更新遅くてもOK)
 	data[INDEX_VOLT] = analogRead(VOLTAGE.getNum());
 	// ウインカー左右取得
-	data[INDEX_WINKERS] = digitalRead(SWITCH.getNum()) << 2;
+	data[INDEX_WINKERS] = data[INDEX_SWITCH] << 2;
 	data[INDEX_WINKERS] |= !digitalRead(WINKER_L.getNum()) << 1;
 	data[INDEX_WINKERS] |= !digitalRead(WINKER_R.getNum());
 
@@ -229,7 +229,7 @@ void loop() {
 int calcFreq(int counter, long period) {
 	static int beforeCounter = 0;
 
-	int freqInt = int((counter - beforeCounter) * 1000000 / (1 * period));
+	int freqInt = int((counter - beforeCounter) * 1000000 / (2 * period));
 	if (freqInt < 0) {
 		freqInt = 0;
 	} else {
