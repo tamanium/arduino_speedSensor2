@@ -10,7 +10,7 @@
      [---] PIN_PB2 ┃7        8┃ PIN_PB1 [SDA]
                    ┗━━━━━━━━━━┛
 新規ピン配置構想
-		   ┏━━━━┓┏━━━━┓
+                   ┏━━━━┓┏━━━━┓
                VCC ┃1.  ┗┛  14┃ GND
    [WINKS] PIN_PA4 ┃2       13┃ PIN_PA3 [VOLT]
    [GEARN] PIN_PA5 ┃3       12┃ PIN_PA2 [SW]
