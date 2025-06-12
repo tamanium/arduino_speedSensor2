@@ -24,8 +24,7 @@
   128x32のOLEDは動作不安定なので128x64のOLEDを使用
 */
 
-//#define FREQ_MODE
-//#define DEBUG_MODE
+#define DEBUG_MODE
 
 #define INPUT_ANALOG 0x03
 
@@ -41,26 +40,7 @@
 	#define ADDRESS_ME 0x55
 #endif
 
-#ifdef FREQ_MODE
-	const int INDEX_FREQTERVAL = 2000;
-	//AttinyPin PULSE(PIN_PA6);
-	int freqArr[] = {
-		15, 55,
-		105, 155,
-		205, 255,
-		305, 355,
-		405, 455,
-		505, 555,
-		605, 655,
-		705, 755,
-		805, 855,
-		905, 955,
-		1005
-	};
-	const int freqArrSize = sizeof(freqArr) / sizeof(int);
-	const int FREQ_INTERVAL = 250;
-	int freqArrIndex = 0;
-#endif
+const int FREQ_INTERVAL = 250;
 
 // 本体側も同じ定義
 enum {
@@ -75,7 +55,6 @@ enum {
 	INDEX_ALL = 0xFF,    // 全てのデータを要求する値(イラナイかも)
 };
 
-AttinyPin GEARS(PIN_PA4);    // ギア
 /*
 AttinyPin GEARS(PIN_PA5); // N
 AttinyPin GEARS(PIN_PA6); // 1
@@ -83,18 +62,10 @@ AttinyPin GEARS(PIN_PA7); // 2
 AttinyPin GEARS(PIN_PB3); // 3
 AttinyPin GEARS(PIN_PB2); // 4
 */
-AttinyPin FREQ(PIN_PA5);     // 周波数
-AttinyPin SWITCH(PIN_PA7);   // スイッチ
-AttinyPin VOLTAGE(PIN_PA1);  // 電圧
-AttinyPin WINKER_L(PIN_PA3); // ウインカー左
-AttinyPin WINKER_R(PIN_PA2); // ウインカー右
-
-/*
 AttinyPin VOLTAGE(PIN_PA3);  // 電圧new
 AttinyPin SWITCH(PIN_PA2);   // スイッチ
 AttinyPin FREQ(PIN_PA1);     // 周波数new
 AttinyPin WINKERS(PIN_PA4);  // ウインカーnew
-*/
 
 byte regIndex = 0x00;
 unsigned long counter = 0;
@@ -130,7 +101,7 @@ void setup() {
 	}
 
 	// ピン設定
-	GEARS.begin(INPUT_ANALOG);    // ギア
+	//GEARS.begin(INPUT_ANALOG);    // ギア
 	//GEARN.begin(INPUT_PULLUP);    // ギアN
 	//GEAR1.begin(INPUT_PULLUP);    // ギア1
 	//GEAR2.begin(INPUT_PULLUP);    // ギア2
@@ -139,17 +110,10 @@ void setup() {
 	FREQ.begin(INPUT_PULLUP);     // 周波数
 	SWITCH.begin(INPUT_PULLUP);   // スイッチ
 	VOLTAGE.begin(INPUT_ANALOG);  // 電圧
-	WINKER_L.begin(INPUT_PULLUP); // ウインカー左
-	WINKER_R.begin(INPUT_PULLUP); // ウインカー右
-	//WINKERS.begin(INPUT_ANALOG); // ウインカー右
+	WINKERS.begin(INPUT_ANALOG); // ウインカー右
 
 	// 割り込み設定
 	attachInterrupt(digitalPinToInterrupt(FREQ.getNum()), interruption, CHANGE);
-
-	#ifdef FREQ_MODE
-		// デバッグ用パルス出力設定
-		tone(PULSE.getNum(), freqArr[freqArrIndex]);
-	#endif
 }
 
 void loop() {
@@ -160,15 +124,13 @@ void loop() {
 	unsigned long time = millis();
 
 	// ギアポジションADC値取得
-	data[INDEX_GEARS] = analogRead(GEARS.getNum());
+	//data[INDEX_GEARS] = analogRead(GEARS.getNum());
 	// スイッチ状態取得(LOWでON)
 	data[INDEX_SWITCH] = !digitalRead(SWITCH.getNum());
 	// 電圧ADC値取得(更新遅くてもOK)
 	data[INDEX_VOLT] = analogRead(VOLTAGE.getNum());
 	// ウインカー左右取得
-	data[INDEX_WINKERS] = data[INDEX_SWITCH] << 2;
-	data[INDEX_WINKERS] |= !digitalRead(WINKER_L.getNum()) << 1;
-	data[INDEX_WINKERS] |= !digitalRead(WINKER_R.getNum());
+	data[INDEX_WINKERS] = analogRead(WINKERS.getNum());
 
 	// 周波数取得
 	if (updateTime <= time) {
@@ -186,18 +148,6 @@ void loop() {
 		updateTime += FREQ_INTERVAL;
 	}
 
-	#ifdef FREQ_MODE
-		// パルス出力設定
-		static unsigned long freqTime = 0;
-		if (freqTime <= time) {
-			freqArrIndex++;
-			freqArrIndex %= freqArrSize;
-			tone(PULSE.getNum(), freqArr[freqArrIndex]);
-			data[INDEX_PULSE] = freqArr[freqArrIndex];
-			freqTime += INDEX_FREQTERVAL;
-		}
-	#endif
-
 	#ifdef DEBUG_MODE
 		// ディスプレイ表示
 		static unsigned long dispTime = 0;
@@ -210,13 +160,14 @@ void loop() {
 			vStr += convertStr(data[INDEX_PULSE]);
 			oled.setPage(3);
 			oled.printlnS(vStr);
+			
 			vStr = "voltADC:";
 			vStr += convertStr(data[INDEX_VOLT]);
 			oled.setPage(4);
 			oled.printlnS(vStr);
 
-			vStr = "gearADC:";
-			vStr += convertStr(data[INDEX_GEARS]);
+			vStr = "gearADC:NONE";
+			//vStr += convertStr(data[INDEX_GEARS]);
 			oled.setPage(5);
 			oled.printlnS(vStr);
 
@@ -228,13 +179,12 @@ void loop() {
 			oled.setPage(6);
 			oled.printlnS(vStr);
 
-			vStr = "winkers:";
-			v = data[INDEX_WINKERS];
-			vStr += convertStr(v);
-			vStr += ":";
-			vStr += ((v & 0x01) == 0x01) ? "L" : " ";
-			vStr += "-";
-			vStr += ((v & 0x02) == 0x02) ? "R" : " ";
+			vStr = "winkADC:";
+			vStr += convertStr(data[INDEX_WINKERS]);
+			//vStr += ":";
+			//vStr += ((v & 0x01) == 0x01) ? "L" : " ";
+			//vStr += "-";
+			//vStr += ((v & 0x02) == 0x02) ? "R" : " ";
 			oled.setPage(7);
 			oled.printlnS(vStr);
 
