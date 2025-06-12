@@ -1,4 +1,5 @@
 /*
+現行ピン配置
                    ┏━━━━┓┏━━━━┓
                VCC ┃1.  ┗┛  14┃ GND
    [GEARS] PIN_PA4 ┃2       13┃ PIN_PA3 [WINKER_L]
@@ -8,12 +9,22 @@
      [---] PIN_PB3 ┃6        9┃ PIN_PB0 [SCL]
      [---] PIN_PB2 ┃7        8┃ PIN_PB1 [SDA]
                    ┗━━━━━━━━━━┛
+新規ピン配置構想
+		   ┏━━━━┓┏━━━━┓
+               VCC ┃1.  ┗┛  14┃ GND
+   [WINKS] PIN_PA4 ┃2       13┃ PIN_PA3 [VOLT]
+   [GEARN] PIN_PA5 ┃3       12┃ PIN_PA2 [SW]
+   [GEAR1] PIN_PA6 ┃4       11┃ PIN_PA1 [FREQ]
+   [GEAR2] PIN_PA7 ┃5       10┃ PIN_PA0 [UPDI]
+   [GEAR3] PIN_PB3 ┃6        9┃ PIN_PB0 [SCL]
+   [GEAR4] PIN_PB2 ┃7        8┃ PIN_PB1 [SDA]
+                   ┗━━━━━━━━━━┛
 
 備考：
   128x32のOLEDは動作不安定なので128x64のOLEDを使用
 */
 
-#define FREQ_MODE
+//#define FREQ_MODE
 //#define DEBUG_MODE
 
 #define INPUT_ANALOG 0x03
@@ -32,7 +43,7 @@
 
 #ifdef FREQ_MODE
 	const int INDEX_FREQTERVAL = 2000;
-	AttinyPin PULSE(PIN_PA6);
+	//AttinyPin PULSE(PIN_PA6);
 	int freqArr[] = {
 		15, 55,
 		105, 155,
@@ -65,11 +76,25 @@ enum {
 };
 
 AttinyPin GEARS(PIN_PA4);    // ギア
+/*
+AttinyPin GEARS(PIN_PA5); // N
+AttinyPin GEARS(PIN_PA6); // 1
+AttinyPin GEARS(PIN_PA7); // 2
+AttinyPin GEARS(PIN_PB3); // 3
+AttinyPin GEARS(PIN_PB2); // 4
+*/
 AttinyPin FREQ(PIN_PA5);     // 周波数
 AttinyPin SWITCH(PIN_PA7);   // スイッチ
 AttinyPin VOLTAGE(PIN_PA1);  // 電圧
 AttinyPin WINKER_L(PIN_PA3); // ウインカー左
 AttinyPin WINKER_R(PIN_PA2); // ウインカー右
+
+/*
+AttinyPin VOLTAGE(PIN_PA3);  // 電圧new
+AttinyPin SWITCH(PIN_PA2);   // スイッチ
+AttinyPin FREQ(PIN_PA1);     // 周波数new
+AttinyPin WINKERS(PIN_PA4);  // ウインカーnew
+*/
 
 byte regIndex = 0x00;
 unsigned long counter = 0;
@@ -106,11 +131,17 @@ void setup() {
 
 	// ピン設定
 	GEARS.begin(INPUT_ANALOG);    // ギア
+	//GEARN.begin(INPUT_PULLUP);    // ギアN
+	//GEAR1.begin(INPUT_PULLUP);    // ギア1
+	//GEAR2.begin(INPUT_PULLUP);    // ギア2
+	//GEAR3.begin(INPUT_PULLUP);    // ギア3
+	//GEAR4.begin(INPUT_PULLUP);    // ギア4
 	FREQ.begin(INPUT_PULLUP);     // 周波数
 	SWITCH.begin(INPUT_PULLUP);   // スイッチ
 	VOLTAGE.begin(INPUT_ANALOG);  // 電圧
 	WINKER_L.begin(INPUT_PULLUP); // ウインカー左
 	WINKER_R.begin(INPUT_PULLUP); // ウインカー右
+	//WINKERS.begin(INPUT_ANALOG); // ウインカー右
 
 	// 割り込み設定
 	attachInterrupt(digitalPinToInterrupt(FREQ.getNum()), interruption, CHANGE);
