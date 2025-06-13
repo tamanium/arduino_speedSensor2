@@ -2,23 +2,23 @@
 現行ピン配置
                    ┏━━━━┓┏━━━━┓
                VCC ┃1.  ┗┛  14┃ GND
-   [GEARS] PIN_PA4 ┃2       13┃ PIN_PA3 [WINKER_L]
-    [FREQ] PIN_PA5 ┃3       12┃ PIN_PA2 [WINKER_R]
-   [PULSE] PIN_PA6 ┃4       11┃ PIN_PA1 [VOLTAGE]
-  [SWITCH] PIN_PA7 ┃5       10┃ PIN_PA0 [UPDI]
+   [gears] PIN_PA4 ┃2       13┃ PIN_PA3 [winkerL]
+   [speed] PIN_PA5 ┃3       12┃ PIN_PA2 [winkerR]
+   [pulse] PIN_PA6 ┃4       11┃ PIN_PA1 [voltage]
+  [switch] PIN_PA7 ┃5       10┃ PIN_PA0 [UPDI]
      [---] PIN_PB3 ┃6        9┃ PIN_PB0 [SCL]
      [---] PIN_PB2 ┃7        8┃ PIN_PB1 [SDA]
                    ┗━━━━━━━━━━┛
 新規ピン配置構想
-                   ┏━━━━┓┏━━━━┓
-               VCC ┃1.  ┗┛  14┃ GND
-   [WINKS] PIN_PA4 ┃2       13┃ PIN_PA3 [VOLT]
-   [GEARN] PIN_PA5 ┃3       12┃ PIN_PA2 [SW]
-   [GEAR1] PIN_PA6 ┃4       11┃ PIN_PA1 [FREQ]
-   [GEAR2] PIN_PA7 ┃5       10┃ PIN_PA0 [UPDI]
-   [GEAR3] PIN_PB3 ┃6        9┃ PIN_PB0 [SCL]
-   [GEAR4] PIN_PB2 ┃7        8┃ PIN_PB1 [SDA]
-                   ┗━━━━━━━━━━┛
+                        ┏━━━━┓┏━━━━┓
+                    VCC ┃1.  ┗┛  14┃ GND
+      [winkers] PIN_PA4 ┃2       13┃ PIN_PA3 [voltage]
+   (yet)[gearN] PIN_PA5 ┃3       12┃ PIN_PA2 [switch]
+   (yet)[gear1] PIN_PA6 ┃4       11┃ PIN_PA1 [speed]
+   (yet)[gear2] PIN_PA7 ┃5       10┃ PIN_PA0 [UPDI]
+   (yet)[gear3] PIN_PB3 ┃6        9┃ PIN_PB0 [SCL]
+   (yet)[gear4] PIN_PB2 ┃7        8┃ PIN_PB1 [SDA]
+                        ┗━━━━━━━━━━┛
 
 備考：
   128x32のOLEDは動作不安定なので128x64のOLEDを使用
@@ -49,23 +49,24 @@ enum {
 	INDEX_WINKERS,       // ウインカービット値
 	INDEX_SWITCH,        // スイッチビット値
 	INDEX_VOLT,          // 電圧ADC値
-	INDEX_PULSE,         // デバッグ用出力パルス周波数
+
 	DATA_SIZE,           // 配列要素数
 	INDEX_A_PART = 0x40, // 電圧と出力パルス以外のデータを要求する値
 	INDEX_ALL = 0xFF,    // 全てのデータを要求する値(イラナイかも)
 };
 
 /*
-AttinyPin GEARS(PIN_PA5); // N
-AttinyPin GEARS(PIN_PA6); // 1
-AttinyPin GEARS(PIN_PA7); // 2
-AttinyPin GEARS(PIN_PB3); // 3
-AttinyPin GEARS(PIN_PB2); // 4
+AttinyPin gearN(PIN_PA5); // N
+AttinyPin gear1(PIN_PA6); // 1
+AttinyPin gear2(PIN_PA7); // 2
+AttinyPin gear3(PIN_PB3); // 3
+AttinyPin gear4(PIN_PB2); // 4
+AttinyPin gears[5];
 */
-AttinyPin VOLTAGE(PIN_PA3);  // 電圧new
-AttinyPin SWITCH(PIN_PA2);   // スイッチ
-AttinyPin FREQ(PIN_PA1);     // 周波数new
-AttinyPin WINKERS(PIN_PA4);  // ウインカーnew
+AttinyPin voltage(PIN_PA3);  // 電圧new
+AttinyPin switch(PIN_PA2);   // スイッチ
+AttinyPin speed(PIN_PA1);     // 周波数new
+AttinyPin winkers(PIN_PA4);  // ウインカーnew
 
 byte regIndex = 0x00;
 unsigned long counter = 0;
@@ -101,49 +102,37 @@ void setup() {
 	}
 
 	// ピン設定
-	//GEARS.begin(INPUT_ANALOG);    // ギア
-	//GEARN.begin(INPUT_PULLUP);    // ギアN
-	//GEAR1.begin(INPUT_PULLUP);    // ギア1
-	//GEAR2.begin(INPUT_PULLUP);    // ギア2
-	//GEAR3.begin(INPUT_PULLUP);    // ギア3
-	//GEAR4.begin(INPUT_PULLUP);    // ギア4
-	FREQ.begin(INPUT_PULLUP);     // 周波数
-	SWITCH.begin(INPUT_PULLUP);   // スイッチ
-	VOLTAGE.begin(INPUT_ANALOG);  // 電圧
-	WINKERS.begin(INPUT_ANALOG); // ウインカー右
+	//gearN.begin(INPUT_PULLUP);    // ギアN
+	//gear1.begin(INPUT_PULLUP);    // ギア1
+	//gear2.begin(INPUT_PULLUP);    // ギア2
+	//gear3.begin(INPUT_PULLUP);    // ギア3
+	//gear4.begin(INPUT_PULLUP);    // ギア4
+	speed.begin(INPUT_PULLUP);     // 周波数
+	switch.begin(INPUT_PULLUP);   // スイッチ
+	voltage.begin(INPUT_ANALOG);  // 電圧
+	winkers.begin(INPUT_ANALOG); // ウインカー右
 
 	// 割り込み設定
-	attachInterrupt(digitalPinToInterrupt(FREQ.getNum()), interruption, CHANGE);
+	attachInterrupt(digitalPinToInterrupt(speed.getNum()), interruption, CHANGE);
 }
 
 void loop() {
-
 	static unsigned long updateTime = 0;
-
-	// システム時刻取得
-	unsigned long time = millis();
-
-	// ギアポジションADC値取得
-	//data[INDEX_GEARS] = analogRead(GEARS.getNum());
-	// スイッチ状態取得(LOWでON)
-	data[INDEX_SWITCH] = !digitalRead(SWITCH.getNum());
-	// 電圧ADC値取得(更新遅くてもOK)
-	data[INDEX_VOLT] = analogRead(VOLTAGE.getNum());
-	// ウインカー左右取得
-	data[INDEX_WINKERS] = analogRead(WINKERS.getNum());
+	
+	unsigned long time = millis();                      // システム時刻取得
+	//data[INDEX_GEARS] = analogRead(GEARS.getNum());   // ギアポジションADC値取得	
+	data[INDEX_SWITCH] = !digitalRead(switch.getNum()); // スイッチ状態取得(LOWでON)
+	data[INDEX_VOLT] = analogRead(voltage.getNum());    // 電圧ADC値取得 TODO:非デバッグ時は1分間隔くらいにする
+	data[INDEX_WINKERS] = analogRead(winkers.getNum()); // ウインカーADC値取得
 
 	// 周波数取得
 	if (updateTime <= time) {
-		noInterrupts();
-		// 累計周期(us)
-		long p = pulsePeriodTotal;
-		// 周期リセット
-		pulsePeriodTotal = 0;
-		// 前回取得からのパルスカウント
-		unsigned long c = counter;
-		interrupts();
-		// 周波数算出
-		data[INDEX_FREQ] = calcFreq(c, p);
+		noInterrupts();            // 割り込み処理停止
+		long p = pulsePeriodTotal; // 累計周期(us)
+		pulsePeriodTotal = 0;      // 周期リセット
+		unsigned long c = counter; // 前回取得からのパルスカウント
+		interrupts();              // 割り込み処理再開
+		data[INDEX_FREQ] = calcFreq(c, p); // 周波数算出
 
 		updateTime += FREQ_INTERVAL;
 	}
@@ -209,13 +198,9 @@ void loop() {
  */
 int calcFreq(int counter, long period) {
 	static int beforeCounter = 0;
-
 	int freqInt = int((counter - beforeCounter) * 1000000 / (2 * period));
-	if (freqInt < 0) {
-		freqInt = 0;
-	} else {
-		freqInt %= 10000;
-	}
+	// 0未満なら0に、0以上なら最大値9999にまとめる
+	freqInt = (freqInt < 0) ? 0 : freqInt % 10000;
 
 	beforeCounter = counter;
 	return freqInt;
