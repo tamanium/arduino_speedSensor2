@@ -10,6 +10,7 @@
 			// コンストラクタ
 			AttinyPin(byte p);
 			void begin(byte mode);
+			byte getNum();
 	};
 
 	/**
@@ -33,5 +34,9 @@
 			pinMode(this->num, mode);
 		}
 		this->mode = mode;
+	}
+	
+	byte AttinuPin::getNum(){
+		return this->num;
 	}
 #endif
