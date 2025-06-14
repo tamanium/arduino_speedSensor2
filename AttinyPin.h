@@ -10,7 +10,6 @@
 			// コンストラクタ
 			AttinyPin(byte p);
 			void begin(byte mode);
-			byte getNum(); 
 	};
 
 	/**
@@ -19,13 +18,6 @@
 	AttinyPin::AttinyPin(byte p){
 		this->num = p;
 		this->mode = OUTPUT;
-	}
-
-	/**
-	 * ピン番号取得
-	 */
-	byte AttinyPin::getNum(){
-		return this->num;
 	}
 
 	/**
