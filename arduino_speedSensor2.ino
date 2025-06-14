@@ -101,11 +101,9 @@ void setup() {
 	}
 
 	// ピン設定
-	//gearN.begin(INPUT_PULLUP);    // ギアN
-	//gear1.begin(INPUT_PULLUP);    // ギア1
-	//gear2.begin(INPUT_PULLUP);    // ギア2
-	//gear3.begin(INPUT_PULLUP);    // ギア3
-	//gear4.begin(INPUT_PULLUP);    // ギア4
+	for(AttinyPin gear : gears){
+		gear.begin(INPUT_PULLUP);
+	}
 	speed.begin(INPUT_PULLUP);     // 周波数
 	switch.begin(INPUT_PULLUP);   // スイッチ
 	voltage.begin(INPUT_ANALOG);  // 電圧
@@ -119,9 +117,10 @@ void loop() {
 	static unsigned long updateTime = 0;
 	
 	unsigned long time = millis();                      // システム時刻取得
-	//data[INDEX_GEARS] = analogRead(GEARS.getNum());   // ギアポジションADC値取得	
+
+	data[INDEX_GEARS] = getGearData();
 	data[INDEX_SWITCH] = !digitalRead(switch.getNum()); // スイッチ状態取得(LOWでON)
-	data[INDEX_VOLT] = analogRead(voltage.getNum());    // 電圧ADC値取得 TODO:非デバッグ時は1分間隔くらいにする
+	data[INDEX_VOLT] = analogRead(voltage.getNum());  // 電圧ADC値取得 TODO:非デバッグ時は1分間隔くらいにする
 	data[INDEX_WINKERS] = analogRead(winkers.getNum()); // ウインカーADC値取得
 
 	// 周波数取得
@@ -155,14 +154,13 @@ void loop() {
 			oled.printlnS(vStr);
 
 			vStr = "gearADC:NONE";
-			//vStr += convertStr(data[INDEX_GEARS]);
+			vStr += data[INDEX_GEARS];
 			oled.setPage(5);
 			oled.printlnS(vStr);
 
 			vStr = "switch :";
 			int v = data[INDEX_SWITCH];
-			vStr += convertStr(v);
-			vStr += ":";
+			vStr += convertStr(v) + ":"
 			vStr += (v == 1) ? "OFF" : "ON ";
 			oled.setPage(6);
 			oled.printlnS(vStr);
@@ -183,6 +181,15 @@ void loop() {
 			dispTime += DISPLAY_INTERVAL;
 		}
 	#endif
+}
+
+int getGearData(){
+	int result = 0;
+	int i=0
+	for(AttinyPin gear : gears){
+		result |= digitalRead(gear.getNum())<<(i++);
+	}
+	return result;
 }
 
 /**
