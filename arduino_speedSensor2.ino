@@ -55,14 +55,13 @@ enum {
 	INDEX_ALL = 0xFF,    // 全てのデータを要求する値(イラナイかも)
 };
 
-/*
 AttinyPin gearN(PIN_PA5); // N
 AttinyPin gear1(PIN_PA6); // 1
 AttinyPin gear2(PIN_PA7); // 2
 AttinyPin gear3(PIN_PB3); // 3
 AttinyPin gear4(PIN_PB2); // 4
 AttinyPin gears[] = {gearN, gear1, gear2, gear3, gear4};
-*/
+
 AttinyPin voltage(PIN_PA3);  // 電圧new
 AttinyPin switch(PIN_PA2);   // スイッチ
 AttinyPin speed(PIN_PA1);     // 周波数new
