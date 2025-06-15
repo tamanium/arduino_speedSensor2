@@ -13,7 +13,7 @@
                         ┏━━━━┓┏━━━━┓
                     VCC ┃1.  ┗┛  14┃ GND
       [winkers] PIN_PA4 ┃2       13┃ PIN_PA3 [voltage]
-   (yet)[gearN] PIN_PA5 ┃3       12┃ PIN_PA2 [switch]
+   (yet)[gearN] PIN_PA5 ┃3       12┃ PIN_PA2 [sw]
    (yet)[gear1] PIN_PA6 ┃4       11┃ PIN_PA1 [speed]
    (yet)[gear2] PIN_PA7 ┃5       10┃ PIN_PA0 [UPDI]
    (yet)[gear3] PIN_PB3 ┃6        9┃ PIN_PB0 [SCL]
@@ -24,7 +24,7 @@
   128x32のOLEDは動作不安定なので128x64のOLEDを使用
 */
 
-#define DEBUG_MODE
+//#define DEBUG_MODE
 
 #define INPUT_ANALOG 0x03
 
@@ -63,7 +63,7 @@ AttinyPin gear4(PIN_PB2); // 4
 AttinyPin gears[] = {gearN, gear1, gear2, gear3, gear4};
 
 AttinyPin voltage(PIN_PA3);  // 電圧new
-AttinyPin switch(PIN_PA2);   // スイッチ
+AttinyPin sw(PIN_PA2);   // スイッチ
 AttinyPin speed(PIN_PA1);     // 周波数new
 AttinyPin winkers(PIN_PA4);  // ウインカーnew
 
@@ -82,10 +82,8 @@ void setup() {
 		oled.init();
 		oled.display();
 		oled.clear();
-		oled.setPage(0);
-		oled.printlnS("Hello");
-		oled.setPage(2);
-		oled.printlnS("debug mode");
+		printlnS(0, "Hello");
+		printlnS(2, "debug mode");
 		delay(1000);
 		oled.clear();
 	#else
@@ -105,7 +103,7 @@ void setup() {
 		gear.begin(INPUT_PULLUP);
 	}
 	speed.begin(INPUT_PULLUP);     // 周波数
-	switch.begin(INPUT_PULLUP);   // スイッチ
+	sw.begin(INPUT_PULLUP);   // スイッチ
 	voltage.begin(INPUT_ANALOG);  // 電圧
 	winkers.begin(INPUT_ANALOG); // ウインカー右
 
@@ -118,9 +116,9 @@ void loop() {
 	
 	unsigned long time = millis();                      // システム時刻取得
 
-	data[INDEX_GEARS] = getGearData();
-	data[INDEX_SWITCH] = !digitalRead(switch.getNum()); // スイッチ状態取得(LOWでON)
-	data[INDEX_VOLT] = analogRead(voltage.getNum());  // 電圧ADC値取得 TODO:非デバッグ時は1分間隔くらいにする
+	data[INDEX_GEARS] = getGearData();                  // ギア状態取得
+	data[INDEX_SWITCH] = !digitalRead(sw.getNum()); // スイッチ状態取得(LOWでON)
+	data[INDEX_VOLT] = analogRead(voltage.getNum());    // 電圧ADC値取得 TODO:非デバッグ時は1分間隔くらいにする
 	data[INDEX_WINKERS] = analogRead(winkers.getNum()); // ウインカーADC値取得
 
 	// 周波数取得
@@ -141,42 +139,34 @@ void loop() {
 		static int loopNum = 0;
 		if (dispTime <= time) {
 			unsigned long dStart = millis();
+			int page = 3;
+			
 			String vStr = "freqIO :";
 			vStr += convertStr(data[INDEX_FREQ]);
-			vStr += "-";
-			vStr += convertStr(data[INDEX_PULSE]);
-			oled.setPage(3);
-			oled.printlnS(vStr);
+			printlnS(page++, vStr);
 			
 			vStr = "voltADC:";
 			vStr += convertStr(data[INDEX_VOLT]);
-			oled.setPage(4);
-			oled.printlnS(vStr);
+			printlnS(page++, vStr);
 
-			vStr = "gearADC:NONE";
-			vStr += data[INDEX_GEARS];
-			oled.setPage(5);
-			oled.printlnS(vStr);
+			vStr = "gearADC:";
+			vStr += convertStr(data[INDEX_GEARS]);
+			printlnS(page++, vStr);
 
 			vStr = "switch :";
-			int v = data[INDEX_SWITCH];
-			vStr += convertStr(v) + ":"
-			vStr += (v == 1) ? "OFF" : "ON ";
-			oled.setPage(6);
-			oled.printlnS(vStr);
+			vStr += convertStr(data[INDEX_SWITCH]);
+			printlnS(page++, vStr);
 
 			vStr = "winkADC:";
 			vStr += convertStr(data[INDEX_WINKERS]);
-			oled.setPage(7);
-			oled.printlnS(vStr);
+			printlnS(page++, vStr);
 
 			unsigned long dDuration = millis() - dStart;
 
 			vStr = convertStr(loopNum++);
 			vStr += " ";
 			vStr += convertStr(dDuration);
-			oled.setPage(0);
-			oled.printlnS(vStr);
+			printlnS(0, vStr);
 
 			dispTime += DISPLAY_INTERVAL;
 		}
@@ -185,7 +175,7 @@ void loop() {
 
 int getGearData(){
 	int result = 0;
-	int i=0
+	int i = 0;
 	for(AttinyPin gear : gears){
 		result |= digitalRead(gear.getNum())<<(i++);
 	}
@@ -240,6 +230,17 @@ void interruption() {
 		}
 		vStr += String(v);
 		return vStr;
+	}
+
+	/**
+	 * 文字列表示
+	 *
+	 * @param p ページ
+	 * @param str 文字列
+	 */
+	void printlnS(int p, String str){
+		oled.setPage(p);
+		oled.printlnS(str);
 	}
 #else
 	/**

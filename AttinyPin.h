@@ -36,7 +36,7 @@
 		this->mode = mode;
 	}
 	
-	byte AttinuPin::getNum(){
+	byte AttinyPin::getNum(){
 		return this->num;
 	}
 #endif
