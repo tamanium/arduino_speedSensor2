@@ -129,33 +129,33 @@ void loop() {
 		if (dispTime <= time) {
 			unsigned long dStart = millis();
 			int page = 3;
+			char vStr[5] = "";
 			
 			String vStr = "freqIO :";
-			vStr += convertStr(data[INDEX_FREQ]);
+			vStr += sprintf(vStr, "%4d", data[INDEX_FREQ]);
 			printlnS(page++, vStr);
 			
 			vStr = "voltADC:";
-			vStr += convertStr(data[INDEX_VOLT]);
+			vStr += sprintf(vStr, "%4d", data[INDEX_VOLT]);
 			printlnS(page++, vStr);
 
 			vStr = "gearADC:";
-			vStr += convertStr(data[INDEX_GEARS]);
+			vStr += sprintf(vStr, "%4d", data[INDEX_GEARS]);
 			printlnS(page++, vStr);
 
 			vStr = "switch :";
-			vStr += convertStr(data[INDEX_SWITCH]);
+			vStr += sprintf(vStr, "%4d", data[INDEX_SWITCH]);
 			printlnS(page++, vStr);
 
 			vStr = "winkADC:";
-			vStr += convertStr(data[INDEX_WINKERS]);
+			vStr += sprintf(vStr, "%4d", data[INDEX_WINKERS]);
 			printlnS(page++, vStr);
 
-			unsigned long dDuration = millis() - dStart;
-
-			vStr = convertStr(loopNum++);
+			vStr = sprintf(vStr, "%4d", loopNum++);
 			vStr += " ";
-			vStr += convertStr(dDuration);
+			vStr += sprintf(vStr, "%4d", millis() - dStart);
 			printlnS(0, vStr);
+			loopNum %= 10000;
 
 			dispTime += DISPLAY_INTERVAL;
 		}
@@ -202,25 +202,6 @@ void interruption() {
 }
 
 #ifdef DEBUG_MODE
-	/**
-	 * int4桁から文字列変換(右空白埋め)
-	 */
-	String convertStr(int v) {
-		String vStr = "";
-		if (0 <= v && v < 10) {
-			// 0以上10未満の場合
-			vStr += "   ";
-		} else if ((10 <= v && v < 100) || (-10 < v && v < 0)) {
-			// 10以上100未満の場合 または -10超0未満の場合
-			vStr += "  ";
-		} else if ((100 <= v && v < 1000) || (-100 < v && v <= -10)) {
-			// 100以上1000未満の場合 または -100超-10以下の場合
-			vStr += " ";
-		}
-		vStr += String(v);
-		return vStr;
-	}
-
 	/**
 	 * 文字列表示
 	 *
