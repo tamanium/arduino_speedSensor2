@@ -1,15 +1,5 @@
 /*
-現行ピン配置
-                   ┏━━━━┓┏━━━━┓
-               VCC ┃1.  ┗┛  14┃ GND
-   [gears] PIN_PA4 ┃2       13┃ PIN_PA3 [winkerL]
-   [speed] PIN_PA5 ┃3       12┃ PIN_PA2 [winkerR]
-   [pulse] PIN_PA6 ┃4       11┃ PIN_PA1 [voltage]
-  [switch] PIN_PA7 ┃5       10┃ PIN_PA0 [UPDI]
-     [---] PIN_PB3 ┃6        9┃ PIN_PB0 [SCL]
-     [---] PIN_PB2 ┃7        8┃ PIN_PB1 [SDA]
-                   ┗━━━━━━━━━━┛
-新規ピン配置構想
+ピン配置
                         ┏━━━━┓┏━━━━┓
                     VCC ┃1.  ┗┛  14┃ GND
       [winkers] PIN_PA4 ┃2       13┃ PIN_PA3 [voltage]
@@ -24,21 +14,20 @@
   128x32のOLEDは動作不安定なので128x64のOLEDを使用
 */
 
-//#define DEBUG_MODE
-
-#define INPUT_ANALOG 0x03
-
 #include <Wire.h>       // I2C通信
 #include "AttinyPin.h"  // 自作クラスヘッダ
 
+//#define DEBUG_MODE
+#define INPUT_ANALOG 0x03
+#define ADDRESS_ME 0x55
+#define ADDRESS_OLED 0x78
+
 #ifdef DEBUG_MODE
 	#include "tiny1306.h"
-	#define ADDRESS_OLED 0x78
 	TINY1306 oled = TINY1306(ADDRESS_OLED >> 1, 128, 8);
 	const int DISPLAY_INTERVAL = 16;
-#else
-	#define ADDRESS_ME 0x55
 #endif
+
 
 const int FREQ_INTERVAL = 250;
 
@@ -99,12 +88,12 @@ void setup() {
 	}
 
 	// ピン設定
-	for(AttinyPin gear : gears){
+	for(AttinyPin gear : gears){ // ギア
 		gear.begin(INPUT_PULLUP);
 	}
-	speed.begin(INPUT_PULLUP);     // 周波数
-	sw.begin(INPUT_PULLUP);   // スイッチ
-	voltage.begin(INPUT_ANALOG);  // 電圧
+	speed.begin(INPUT_PULLUP);   // 周波数
+	sw.begin(INPUT_PULLUP);      // スイッチ
+	voltage.begin(INPUT_ANALOG); // 電圧
 	winkers.begin(INPUT_ANALOG); // ウインカー右
 
 	// 割り込み設定
@@ -116,9 +105,9 @@ void loop() {
 	
 	unsigned long time = millis();                      // システム時刻取得
 
-	data[INDEX_GEARS] = getGearData();                  // ギア状態取得
-	data[INDEX_SWITCH] = !digitalRead(sw.getNum()); // スイッチ状態取得(LOWでON)
-	data[INDEX_VOLT] = analogRead(voltage.getNum());    // 電圧ADC値取得 TODO:非デバッグ時は1分間隔くらいにする
+	data[INDEX_GEARS]   = getGearData();                  // ギア状態取得
+	data[INDEX_SWITCH]  = !digitalRead(sw.getNum()); // スイッチ状態取得(LOWでON)
+	data[INDEX_VOLT]    = analogRead(voltage.getNum());    // 電圧ADC値取得 TODO:非デバッグ時は1分間隔くらいにする
 	data[INDEX_WINKERS] = analogRead(winkers.getNum()); // ウインカーADC値取得
 
 	// 周波数取得
