@@ -190,8 +190,8 @@ int calcFreq(int counter, long period) {
 /**
  * 割り込み処理
  */
-volatile unsigned long beforeTime = 0;
 void interruption() {
+	static unsigned long beforeTime = 0;
 	counter++;
 	// オーバーフロー防止
 	counter %= 10000000;
