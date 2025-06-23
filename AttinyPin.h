@@ -15,9 +15,11 @@
 
 	/**
 	 * コンストラクタ
+	 *
+	 * @param p ピン番号
 	 */
-	AttinyPin::AttinyPin(byte p){
-		this->num = p;
+	AttinyPin::AttinyPin(byte pinNum){
+		this->num = pinNum;
 		this->mode = OUTPUT;
 	}
 
@@ -36,6 +38,9 @@
 		this->mode = mode;
 	}
 	
+	/**
+	 * ピン番号を取得
+	 */
 	byte AttinyPin::getNum(){
 		return this->num;
 	}

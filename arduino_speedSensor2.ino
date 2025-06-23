@@ -128,35 +128,34 @@ void loop() {
 		static int loopNum = 0;
 		if (dispTime <= time) {
 			unsigned long dStart = millis();
-			int page = 3;
-			char vStr[5] = "";
+			int page = 0;
+			int tmpData[DATA_SIZE+2];
+			memcpy(tmpData, data, DATA_SIZE);
+			tmpData[DATA_SIZE] = loopNum++;
+			tmpData[DATA_SIZE+1] = millis() - dStart;
+
+			char msgCharsArr[7][9] = {
+				"freqIO :",
+				"gearADC:",
+				"winkADC:",
+				"switch :",
+				"voltADC:",
+
+				"counter:",
+				"msec   :"
+			};
 			
-			String vStr = "freqIO :";
-			vStr += sprintf(vStr, "%4d", data[INDEX_FREQ]);
-			printlnS(page++, vStr);
-			
-			vStr = "voltADC:";
-			vStr += sprintf(vStr, "%4d", data[INDEX_VOLT]);
-			printlnS(page++, vStr);
+			char valueChars[4];
+			for(int i=0;i<DATA_SIZE+2;i++){
+				char msgChars[13];
+				memcpy(msgChars, msgCharsArr, 8);
+				sprintf(valueChars, "%4d", tmpData[i]);
+				strncpy(&msgChars[8], valueChars, 4);
+				oled.setPage(page++);
+				oled.println(msgChars);
+			}
 
-			vStr = "gearADC:";
-			vStr += sprintf(vStr, "%4d", data[INDEX_GEARS]);
-			printlnS(page++, vStr);
-
-			vStr = "switch :";
-			vStr += sprintf(vStr, "%4d", data[INDEX_SWITCH]);
-			printlnS(page++, vStr);
-
-			vStr = "winkADC:";
-			vStr += sprintf(vStr, "%4d", data[INDEX_WINKERS]);
-			printlnS(page++, vStr);
-
-			vStr = sprintf(vStr, "%4d", loopNum++);
-			vStr += " ";
-			vStr += sprintf(vStr, "%4d", millis() - dStart);
-			printlnS(0, vStr);
 			loopNum %= 10000;
-
 			dispTime += DISPLAY_INTERVAL;
 		}
 	#endif
@@ -206,11 +205,11 @@ void interruption() {
 	 * 文字列表示
 	 *
 	 * @param p ページ
-	 * @param str 文字列
+	 * @param charPtr char配列ポインタ
 	 */
-	void printlnS(int p, String str){
+	void printlnS(int p, const char* charPtr){
 		oled.setPage(p);
-		oled.printlnS(str);
+		oled.printlnS(charPtr);
 	}
 #else
 	/**
