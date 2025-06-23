@@ -15,7 +15,7 @@
 */
 
 #include <Wire.h>       // I2C通信
-#include "AttinyPin.h"  // 自作クラスヘッダ
+//#include "AttinyPin.h"  // 自作クラスヘッダ
 
 //#define DEBUG_MODE
 #define INPUT_ANALOG 0x03
@@ -44,18 +44,20 @@ enum {
 	INDEX_ALL = 0xFF,    // 全てのデータを要求する値(イラナイかも)
 };
 
-AttinyPin gearN(PIN_PA5); // N
-AttinyPin gear1(PIN_PA6); // 1
-AttinyPin gear2(PIN_PA7); // 2
-AttinyPin gear3(PIN_PB3); // 3
-AttinyPin gear4(PIN_PB2); // 4
-AttinyPin gears[] = {gearN, gear1, gear2, gear3, gear4};
+enum {
+	gearN  = PIN_PA5,
+	gear1  = PIN_PA6,
+	gear2  = PIN_PA7,
+	gear3  = PIN_PA3,
+	gear4  = PIN_PA2,
 
-AttinyPin voltage(PIN_PA3);  // 電圧new
-AttinyPin sw(PIN_PA2);   // スイッチ
-AttinyPin speed(PIN_PA1);     // 周波数new
-AttinyPin winkers(PIN_PA4);  // ウインカーnew
+	voltage = PIN_PA3,
+	sw      = PIN_PA2,
+	speed   = PIN_PA1,
+	winkers = PIN_PA4
+};
 
+int gears[] = {gearN, gear1, gear2, gear3, gear4};
 byte regIndex = 0x00;
 unsigned long counter = 0;
 unsigned long pulsePeriodTotal = 0;
@@ -82,22 +84,18 @@ void setup() {
 		Wire.onRequest(requestEvent);
 	#endif
 
-	// データバッファの初期化
-	for (int i = 0; i < DATA_SIZE; i++) {
-		data[i] = -2;
-	}
 
 	// ピン設定
-	for(AttinyPin gear : gears){ // ギア
-		gear.begin(INPUT_PULLUP);
+	// ギア
+	for(int gear : gears){ // ギア
+		pinMode(gear, INPUT_PULLUP);
 	}
-	speed.begin(INPUT_PULLUP);   // 周波数
-	sw.begin(INPUT_PULLUP);      // スイッチ
-	voltage.begin(INPUT_ANALOG); // 電圧
-	winkers.begin(INPUT_ANALOG); // ウインカー右
-
+	// 周波数
+	pinMode(speed, INPUT_PULLUP);
+	// スイッチ
+	pinMode(sw, INPUT_PULLUP);
 	// 割り込み設定
-	attachInterrupt(digitalPinToInterrupt(speed.getNum()), interruption, CHANGE);
+	attachInterrupt(digitalPinToInterrupt(speed), interruption, CHANGE);
 }
 
 void loop() {
@@ -105,11 +103,10 @@ void loop() {
 	
 	unsigned long time = millis();                      // システム時刻取得
 
-	data[INDEX_GEARS]   = getGearData();                  // ギア状態取得
-	data[INDEX_SWITCH]  = !digitalRead(sw.getNum()); // スイッチ状態取得(LOWでON)
-	data[INDEX_VOLT]    = analogRead(voltage.getNum());    // 電圧ADC値取得 TODO:非デバッグ時は1分間隔くらいにする
-	data[INDEX_WINKERS] = analogRead(winkers.getNum()); // ウインカーADC値取得
-
+	data[INDEX_GEARS]   = getGearData();       // ギア状態取得
+	data[INDEX_SWITCH]  = !digitalRead(sw);    // スイッチ状態取得(LOWでON)
+	data[INDEX_VOLT]    = analogRead(voltage); // 電圧ADC値取得
+	data[INDEX_WINKERS] = analogRead(winkers); // ウインカーADC値取得
 	// 周波数取得
 	if (updateTime <= time) {
 		noInterrupts();            // 割り込み処理停止
@@ -164,8 +161,8 @@ void loop() {
 int getGearData(){
 	int result = 0;
 	int i = 0;
-	for(AttinyPin gear : gears){
-		result |= digitalRead(gear.getNum())<<(i++);
+	for(int gear : gears){
+		result |= digitalRead(gear)<<(i++);
 	}
 	return result;
 }
