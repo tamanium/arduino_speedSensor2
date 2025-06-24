@@ -48,8 +48,8 @@ enum {
 	gearN  = PIN_PA5,
 	gear1  = PIN_PA6,
 	gear2  = PIN_PA7,
-	gear3  = PIN_PA3,
-	gear4  = PIN_PA2,
+	gear3  = PIN_PB3,
+	gear4  = PIN_PB2,
 
 	voltage = PIN_PA3,
 	sw      = PIN_PA2,
