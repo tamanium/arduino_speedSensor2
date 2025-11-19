@@ -233,6 +233,17 @@ void interruption() {
 			Wire.write(sendDataArr, 8);
 			return;
 		}
+		else if (regIndex == INDEX_ALL) {
+			byte sendDataArr[10] = {
+				byte(data[INDEX_FREQ] >> 8),    byte(data[INDEX_FREQ] & 0xFF),
+				byte(data[INDEX_GEARS] >> 8),   byte(data[INDEX_GEARS] & 0xFF),
+				byte(data[INDEX_WINKERS] >> 8), byte(data[INDEX_WINKERS] & 0xFF),
+				byte(data[INDEX_SWITCH] >> 8),  byte(data[INDEX_SWITCH] & 0xFF),
+				byte(data[INDEX_VOLT] >> 8),    byte(data[INDEX_VOLT] & 0xFF),
+			};
+			Wire.write(sendDataArr, 10);
+			return;
+		}
 		else if (regIndex < DATA_SIZE) {
 			sendData = data[regIndex];
 		}
