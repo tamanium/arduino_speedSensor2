@@ -66,21 +66,11 @@ void setup() {
 	delay(200);
 
 	#ifdef DEBUG_MODE
-		//デバッグモードの場合、ディスプレイと接続
-		Wire.begin();
-		Wire.setClock(400000);
-		oled.init();
-		oled.display();
-		oled.clear();
-		printlnS(0, "Hello");
-		printlnS(2, "debug mode");
-		delay(1000);
-		oled.clear();
+		//デバッグモード初期設定
+		debugInit();
 	#else
 		// 非デバッグモードの場合、I2Cスレーブ設定
-		Wire.begin(MY_ADDRESS);
-		Wire.onReceive(receiveEvent);
-		Wire.onRequest(requestEvent);
+		normalInit();
 	#endif
 
 
@@ -117,41 +107,8 @@ void loop() {
 	}
 
 	#ifdef DEBUG_MODE
-		// ディスプレイ表示
-		static unsigned long dispTime = 0;
-		static int loopNum = 0;
-		if (dispTime <= sysTime) {
-			unsigned long dStart = millis();
-			int page = 0;
-			int tmpData[DATA_SIZE+2];
-			memcpy(tmpData, data, DATA_SIZE);
-			tmpData[DATA_SIZE] = loopNum++;
-			tmpData[DATA_SIZE+1] = millis() - dStart;
-
-			char msgCharsArr[7][9] = {
-				"freqIO :",
-				"gearADC:",
-				"winkADC:",
-				"switch :",
-				"voltADC:",
-
-				"counter:",
-				"msec   :"
-			};
-			
-			char valueChars[4];
-			for(int i=0;i<DATA_SIZE+2;i++){
-				char msgChars[13];
-				memcpy(msgChars, msgCharsArr, 8);
-				sprintf(valueChars, "%4d", tmpData[i]);
-				strncpy(&msgChars[8], valueChars, 4);
-				oled.setPage(page++);
-				oled.println(msgChars);
-			}
-
-			loopNum %= 10000;
-			dispTime += DISPLAY_INTERVAL;
-		}
+		// デバッグ表示
+		displayDebug(sysTime);
 	#endif
 }
 
@@ -196,6 +153,62 @@ void interruption() {
 }
 
 #ifdef DEBUG_MODE
+
+	/**
+	 * デバッグモード初期設定
+	 */
+	void debugInit() {
+		Wire.begin();
+		Wire.setClock(400000);
+		oled.init();
+		oled.display();
+		oled.clear();
+		printlnS(0, "Hello");
+		printlnS(2, "debug mode");
+		delay(1000);
+		oled.clear();
+	}
+
+	/**
+	 * 表示処理
+	 */
+	void displayDebug(unsigned long sysTime) {
+		static unsigned long displayTime = 0;
+		static int loopNum = 0;
+		if (displayTime <= sysTime) {
+			unsigned long dStart = millis();
+			int page = 0;
+			int tmpData[DATA_SIZE+2];
+			memcpy(tmpData, data, DATA_SIZE);
+			tmpData[DATA_SIZE] = loopNum++;
+			tmpData[DATA_SIZE+1] = millis() - dStart;
+
+			char msgCharsArr[7][9] = {
+				"freqIO :",
+				"gearADC:",
+				"winkADC:",
+				"switch :",
+				"voltADC:",
+
+				"counter:",
+				"msec   :"
+			};
+				
+			char valueChars[4];
+			for(int i=0;i<DATA_SIZE+2;i++){
+				char msgChars[13];
+				memcpy(msgChars, msgCharsArr, 8);
+				sprintf(valueChars, "%4d", tmpData[i]);
+				strncpy(&msgChars[8], valueChars, 4);
+				oled.setPage(page++);
+				oled.println(msgChars);
+			}
+
+			loopNum %= 10000;
+			displayTime += DISPLAY_INTERVAL;
+		}
+	}
+
 	/**
 	 * 文字列表示
 	 *
@@ -207,6 +220,17 @@ void interruption() {
 		oled.printlnS(charPtr);
 	}
 #else
+
+	/**
+	 * 通常モード初期設定
+	 */
+	void normalInit() {
+		// I2C通信設定
+		Wire.begin(MY_ADDRESS);
+		Wire.onReceive(receiveEvent);
+		Wire.onRequest(requestEvent);
+	}
+
 	/**
 	 * I2C受信処理
 	 */
@@ -220,7 +244,6 @@ void interruption() {
 	 * I2C要求処理（全データ送信）
 	 */
 	void requestEvent() {
-		int sendData = 0;
 		uint8_t sendDataArr[DATA_SIZE*2] = {
 			uint8_t(data[FREQ] >> 8), uint8_t(data[FREQ] & 0xFF),
 			uint8_t(data[GEAR] >> 8), uint8_t(data[GEAR] & 0xFF),
