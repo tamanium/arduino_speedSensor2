@@ -155,10 +155,14 @@ void loop() {
 	#endif
 }
 
-int getGearData(){
-	int result = 0;
-	int i = 0;
-	for(int gear : gears){
+/**
+ * ギアポジション取得
+ * @return uint8_t型 ビットマップ[N,1,2,3,4,]
+ */
+uint8_t getGearData(){
+	uint8_t result = 0;
+	uint8_t i = 0;
+	for(uint8_t gear : gears){
 		result |= digitalRead(gear)<<(i++);
 	}
 	return result;
