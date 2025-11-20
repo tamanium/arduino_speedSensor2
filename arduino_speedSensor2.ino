@@ -18,16 +18,14 @@
 //#include "AttinyPin.h"  // 自作クラスヘッダ
 
 //#define DEBUG_MODE
-#define INPUT_ANALOG 0x03
-#define ADDRESS_ME 0x55
-#define ADDRESS_OLED 0x78
+#define MY_ADDRESS 0x55
 
 #ifdef DEBUG_MODE
 	#include "tiny1306.h"
+	#define ADDRESS_OLED 0x78
 	TINY1306 oled = TINY1306(ADDRESS_OLED >> 1, 128, 8);
 	const int DISPLAY_INTERVAL = 16;
 #endif
-
 
 const int FREQ_INTERVAL = 250;
 
@@ -56,9 +54,12 @@ enum {
 };
 
 // ギア用ピン定義
-int gears[] = {gearN, gear1, gear2, gear3, gear4};
+constexpr uint8_t gears[] = {gearN, gear1, gear2, gear3, gear4};
+// パルス取得用カウンタ
 unsigned long counter = 0;
+// パルス所得用合計カウンタ
 unsigned long pulsePeriodTotal = 0;
+// データ格納用配列
 int data[DATA_SIZE];
 
 void setup() {
@@ -77,15 +78,14 @@ void setup() {
 		oled.clear();
 	#else
 		// 非デバッグモードの場合、I2Cスレーブ設定
-		Wire.begin(ADDRESS_ME);
+		Wire.begin(MY_ADDRESS);
 		Wire.onReceive(receiveEvent);
 		Wire.onRequest(requestEvent);
 	#endif
 
 
-	// ピン設定
-	// ギア
-	for(int gear : gears){ // ギア
+	//ギアポジション
+	for(uint8_t gear : gears) {
 		pinMode(gear, INPUT_PULLUP);
 	}
 	// 周波数
@@ -97,7 +97,7 @@ void setup() {
 }
 
 void loop() {
-	static unsigned long updateTime = 0;
+	static unsigned long updateTime = 0; // 周波数取得時刻
 	
 	unsigned long sysTime = millis();    // システム時刻取得
 
@@ -161,9 +161,8 @@ void loop() {
  */
 uint8_t getGearData(){
 	uint8_t result = 0;
-	uint8_t i = 0;
-	for(uint8_t gear : gears){
-		result |= digitalRead(gear)<<(i++);
+	for(uint8_t i=0; i<sizeof(gears)/sizeof(uint8_t); i++) {
+		result |= digitalRead(gears[i]) << i;
 	}
 	return result;
 }
