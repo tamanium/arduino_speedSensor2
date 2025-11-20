@@ -99,21 +99,20 @@ void setup() {
 void loop() {
 	static unsigned long updateTime = 0;
 	
-	unsigned long time = millis();                      // システム時刻取得
+	unsigned long sysTime = millis();    // システム時刻取得
 
-	data[GEAR]   = getGearData();       // ギア状態取得
-	data[BUTN]  = !digitalRead(sw);    // スイッチ状態取得(LOWでON)
-	data[VOLT]    = analogRead(voltage); // 電圧ADC値取得
+	data[GEAR] = getGearData();       // ギア状態取得
+	data[BUTN] = !digitalRead(sw);    // スイッチ状態取得(LOWでON)
+	data[VOLT] = analogRead(voltage); // 電圧ADC値取得
 	data[WNKR] = analogRead(winkers); // ウインカーADC値取得
 	// 周波数取得
-	if (updateTime <= time) {
+	if (updateTime <= sysTime) {
 		noInterrupts();            // 割り込み処理停止
-		long p = pulsePeriodTotal; // 累計周期(us)
+		unsigned long  p = pulsePeriodTotal; // 累計周期(us)
 		pulsePeriodTotal = 0;      // 周期リセット
 		unsigned long c = counter; // 前回取得からのパルスカウント
 		interrupts();              // 割り込み処理再開
 		data[FREQ] = calcFreq(c, p); // 周波数算出
-
 		updateTime += FREQ_INTERVAL;
 	}
 
@@ -121,7 +120,7 @@ void loop() {
 		// ディスプレイ表示
 		static unsigned long dispTime = 0;
 		static int loopNum = 0;
-		if (dispTime <= time) {
+		if (dispTime <= sysTime) {
 			unsigned long dStart = millis();
 			int page = 0;
 			int tmpData[DATA_SIZE+2];
@@ -171,14 +170,14 @@ int getGearData(){
  * @param counter 合計パルスカウント数
  * @param period  前回からのパルス周期積算
  */
-int calcFreq(int counter, long period) {
-	static int beforeCounter = 0;
-	int freqInt = int((counter - beforeCounter) * 1000000 / (2 * period));
-	// 0未満なら0に、0以上なら最大値9999にまとめる
-	freqInt = (freqInt < 0) ? 0 : freqInt % 10000;
-
+int calcFreq(unsigned long counter, unsigned long period) {
+	static unsigned long beforeCounter = 0;
+	// 0の場合、処理スキップ
+	if(period == 0) return 0;
+	unsigned long freqInt = (counter - beforeCounter) * 1000000UL / (2 * period);
 	beforeCounter = counter;
-	return freqInt;
+	// 最大9999
+	return (freqInt < 10000) ? freqInt : 9999;
 }
 
 /**
@@ -187,8 +186,6 @@ int calcFreq(int counter, long period) {
 void interruption() {
 	static unsigned long beforeTime = 0;
 	counter++;
-	// オーバーフロー防止
-	counter %= 10000000;
 	// 周期[us]を取得・加算
 	unsigned long time = micros();
 	pulsePeriodTotal += time - beforeTime;
