@@ -31,25 +31,23 @@
 
 const int FREQ_INTERVAL = 250;
 
-// 本体側も同じ定義
+// インデックス定数（本体側も同じ定義）
 enum {
-	INDEX_FREQ,           // パルス周波数
-	INDEX_GEARS,         // ギアポジADC値
-	INDEX_WINKERS,       // ウインカービット値
-	INDEX_SWITCH,        // スイッチビット値
-	INDEX_VOLT,          // 電圧ADC値
-
-	DATA_SIZE,           // 配列要素数
-	INDEX_A_PART = 0x40, // 電圧と出力パルス以外のデータを要求する値
-	INDEX_ALL = 0xFF,    // 全てのデータを要求する値(イラナイかも)
+	FREQ,      // パルス周波数
+	GEAR,      // ギアポジADC値
+	WNKR,      // ウインカービット値
+	BUTN,      // スイッチビット値
+	VOLT,      // 電圧ADC値
+	DATA_SIZE, // 配列要素数
 };
 
+// ピン定義
 enum {
-	gearN  = PIN_PA5,
-	gear1  = PIN_PA6,
-	gear2  = PIN_PA7,
-	gear3  = PIN_PB3,
-	gear4  = PIN_PB2,
+	gearN  = PIN_PA7,
+	gear1  = PIN_PB2,
+	gear2  = PIN_PA6,
+	gear3  = PIN_PA5,
+	gear4  = PIN_PB3,
 
 	voltage = PIN_PA3,
 	sw      = PIN_PA2,
@@ -57,8 +55,8 @@ enum {
 	winkers = PIN_PA4
 };
 
+// ギア用ピン定義
 int gears[] = {gearN, gear1, gear2, gear3, gear4};
-byte regIndex = 0x00;
 unsigned long counter = 0;
 unsigned long pulsePeriodTotal = 0;
 int data[DATA_SIZE];
@@ -103,10 +101,10 @@ void loop() {
 	
 	unsigned long time = millis();                      // システム時刻取得
 
-	data[INDEX_GEARS]   = getGearData();       // ギア状態取得
-	data[INDEX_SWITCH]  = !digitalRead(sw);    // スイッチ状態取得(LOWでON)
-	data[INDEX_VOLT]    = analogRead(voltage); // 電圧ADC値取得
-	data[INDEX_WINKERS] = analogRead(winkers); // ウインカーADC値取得
+	data[GEAR]   = getGearData();       // ギア状態取得
+	data[BUTN]  = !digitalRead(sw);    // スイッチ状態取得(LOWでON)
+	data[VOLT]    = analogRead(voltage); // 電圧ADC値取得
+	data[WNKR] = analogRead(winkers); // ウインカーADC値取得
 	// 周波数取得
 	if (updateTime <= time) {
 		noInterrupts();            // 割り込み処理停止
@@ -114,7 +112,7 @@ void loop() {
 		pulsePeriodTotal = 0;      // 周期リセット
 		unsigned long c = counter; // 前回取得からのパルスカウント
 		interrupts();              // 割り込み処理再開
-		data[INDEX_FREQ] = calcFreq(c, p); // 周波数算出
+		data[FREQ] = calcFreq(c, p); // 周波数算出
 
 		updateTime += FREQ_INTERVAL;
 	}
@@ -210,44 +208,26 @@ void interruption() {
 	}
 #else
 	/**
-	 * I2C受診処理
+	 * I2C受信処理
 	 */
 	void receiveEvent(int numByte) {
 		while (0 < Wire.available()) {
-			regIndex = Wire.read();
+			uint8_t dummy = Wire.read();
 		}
 	}
 
 	/**
-	 * I2C要求処理
+	 * I2C要求処理（全データ送信）
 	 */
 	void requestEvent() {
-		int sendData = -8;
-		if (regIndex == INDEX_A_PART) {
-			byte sendDataArr[8] = {
-				byte(data[INDEX_FREQ] >> 8),    byte(data[INDEX_FREQ] & 0xFF),
-				byte(data[INDEX_GEARS] >> 8),   byte(data[INDEX_GEARS] & 0xFF),
-				byte(data[INDEX_WINKERS] >> 8), byte(data[INDEX_WINKERS] & 0xFF),
-				byte(data[INDEX_SWITCH] >> 8),  byte(data[INDEX_SWITCH] & 0xFF),
-			};
-			Wire.write(sendDataArr, 8);
-			return;
-		}
-		else if (regIndex == INDEX_ALL) {
-			byte sendDataArr[10] = {
-				byte(data[INDEX_FREQ] >> 8),    byte(data[INDEX_FREQ] & 0xFF),
-				byte(data[INDEX_GEARS] >> 8),   byte(data[INDEX_GEARS] & 0xFF),
-				byte(data[INDEX_WINKERS] >> 8), byte(data[INDEX_WINKERS] & 0xFF),
-				byte(data[INDEX_SWITCH] >> 8),  byte(data[INDEX_SWITCH] & 0xFF),
-				byte(data[INDEX_VOLT] >> 8),    byte(data[INDEX_VOLT] & 0xFF),
-			};
-			Wire.write(sendDataArr, 10);
-			return;
-		}
-		else if (regIndex < DATA_SIZE) {
-			sendData = data[regIndex];
-		}
-		byte sendDataArr[2] = { byte(sendData >> 8), byte(sendData & 0xFF) };
-		Wire.write(sendDataArr, 2);
+		int sendData = 0;
+		uint8_t sendDataArr[DATA_SIZE*2] = {
+			uint8_t(data[FREQ] >> 8), uint8_t(data[FREQ] & 0xFF),
+			uint8_t(data[GEAR] >> 8), uint8_t(data[GEAR] & 0xFF),
+			uint8_t(data[WNKR] >> 8), uint8_t(data[WNKR] & 0xFF),
+			uint8_t(data[BUTN] >> 8), uint8_t(data[BUTN] & 0xFF),
+			uint8_t(data[VOLT] >> 8), uint8_t(data[VOLT] & 0xFF),
+		};
+		Wire.write(sendDataArr, DATA_SIZE*2);
 	}
 #endif
